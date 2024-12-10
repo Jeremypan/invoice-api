@@ -1,12 +1,5 @@
 package com.kraken.api.web.rest.v1.controller;
 
-/*
- *@ClassName InvoiceController
- *@Description To create Endpoint for invoice api
- *@Author hjpan
- *@Date 9/12/2024 10:37 pm
- **/
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
