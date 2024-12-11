@@ -29,15 +29,15 @@ public class InvoiceEntity {
     private Double netAmount;
 
     @Column(name = "receipt_date", nullable = false)
-    private Double receiptDate;
+    private LocalDate receiptDate;
 
     @Column(name = "payment_due_date", nullable = false)
-    private Double paymentDueDate;
+    private LocalDate paymentDueDate;
 
     @Column(name = "total_number_transaction", nullable = false)
-    private Double totalNumberTransaction;
+    private Integer totalNumberTransaction;
 
-    @OneToMany(mappedBy = "invoice")
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
     private List<TransactionEntity> transactionEntities;
 
 }

@@ -1,17 +1,20 @@
 package com.kraken.api.web.rest.v1.controller;
 
+import com.kraken.api.model.Invoice;
+import com.kraken.api.service.InvoiceService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/invoice")
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class InvoiceController {
+
+    private final InvoiceService invoiceService;
 
     @RequestMapping(
             method = RequestMethod.POST,
@@ -19,8 +22,11 @@ public class InvoiceController {
             path = "/invoice"
 
     )
-    public ResponseEntity<?> createInvoice() {
-        return ResponseEntity.status(204).build();
+    public ResponseEntity<?> createInvoice(
+            @RequestBody Invoice invoice
+    ) {
+        invoiceService.createInvoice(invoice);
+        return ResponseEntity.status(201).build();
     }
 
     @RequestMapping(
@@ -29,7 +35,7 @@ public class InvoiceController {
             path = "/invoice"
     )
     public ResponseEntity<?> getInvoice() {
-        return ResponseEntity.status(204).build();
+        return ResponseEntity.status(200).body(invoiceService.getAllInvoice());
     }
 
     @RequestMapping(
@@ -38,7 +44,7 @@ public class InvoiceController {
             path = "/invoice/{invoiceId}"
     )
     public ResponseEntity<?> getInvoice(@PathVariable String invoiceId) {
-        return ResponseEntity.status(204).body(invoiceId);
+        return ResponseEntity.status(200).body(invoiceService.getInvoice(invoiceId));
     }
 
     @RequestMapping(

@@ -1,9 +1,11 @@
 package com.kraken.api.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDate;
 
+@Data
 @Entity
 @Table(name="transaction")
 public class TransactionEntity {
@@ -32,8 +34,8 @@ public class TransactionEntity {
     private LocalDate billingPeriodEnd;
 
     @Column(name = "net_transaction_amount", nullable = false)
-    private Float netTransactionAmount;
+    private Double netTransactionAmount;
 
     @Column(name = "gst_amount", nullable = false)
-    private Float gstAmount;
+    private Double gstAmount;
 }
