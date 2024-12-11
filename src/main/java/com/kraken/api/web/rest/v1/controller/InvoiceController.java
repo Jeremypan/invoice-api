@@ -25,6 +25,7 @@ public class InvoiceController {
     public ResponseEntity<?> createInvoice(
             @RequestBody Invoice invoice
     ) {
+        log.info("Creating Invoice");
         invoiceService.createInvoice(invoice);
         return ResponseEntity.status(201).build();
     }

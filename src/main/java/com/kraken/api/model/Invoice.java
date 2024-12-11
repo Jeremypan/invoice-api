@@ -1,5 +1,6 @@
 package com.kraken.api.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
 import java.util.List;
@@ -14,6 +15,7 @@ public record Invoice(
         String receiptDate,
         String paymentDueDate,
         Integer totalNumTrxn,
+        @JsonProperty("transactions")
         List<Transaction> transactionList
 ) {
 }
