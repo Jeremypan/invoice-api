@@ -2,6 +2,8 @@ package com.kraken.api.model;
 
 import lombok.Builder;
 
+import java.util.List;
+
 @Builder
 public record Invoice(
         String invoiceId,
@@ -11,6 +13,7 @@ public record Invoice(
         Double netAmount,
         String receiptDate,
         String paymentDueDate,
-        Integer totalNumTrxn
+        Integer totalNumTrxn,
+        List<Transaction> transactionList
 ) {
 }
