@@ -1,5 +1,6 @@
 package com.kraken.api.service;
 
+import com.kraken.api.exception.InvoiceServiceException;
 import com.kraken.api.model.Invoice;
 import com.kraken.api.model.InvoiceStatus;
 import com.kraken.api.model.Status;
@@ -10,11 +11,12 @@ import com.kraken.api.repository.InvoiceRepository;
 import com.kraken.api.utils.DateConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,7 +37,7 @@ public class InvoiceServiceImpl implements InvoiceService{
             return convertToInvoice(invoiceEntity.get());
         } else {
             log.error("There is no invoice with id={}", invoiceId);
-            throw new RuntimeException("fix it later");
+            throw new InvoiceServiceException(HttpStatusCode.valueOf(400), "Get Invoice By Id=%s failed".formatted(invoiceId));
         }
     }
 
