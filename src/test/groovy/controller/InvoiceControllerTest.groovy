@@ -1,17 +1,18 @@
 package controller
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.kraken.api.InvoiceApplication
 import com.kraken.api.exception.model.Error
 import com.kraken.api.model.Invoice
 import com.kraken.api.model.Transaction
 import com.kraken.api.service.InvoiceService
+import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import spock.lang.Shared
@@ -49,7 +50,7 @@ class InvoiceControllerTest extends Specification {
     @Shared
     String TRXN_DATE = "2006-03-17 00:00:00.000"
     @Shared
-    String BILLING_STRAT = "2006-01-01 00:00:00.000"
+    String BILLING_START = "2006-01-01 00:00:00.000"
     @Shared
     String BILLING_END = "2006-03-17 00:00:00.000"
     @Shared
@@ -57,9 +58,8 @@ class InvoiceControllerTest extends Specification {
     @Shared
     Double TRXN_GST_AMOUNT = 3.20
 
-
-    @MockitoBean
-    private InvoiceService invoiceService
+    @SpringBean
+    InvoiceService invoiceService=Mock(InvoiceService.class);
 
     @Autowired
     MockMvc mockMvc
@@ -67,20 +67,13 @@ class InvoiceControllerTest extends Specification {
     @Autowired
     ObjectMapper objectMapper
 
-    def 'Given a invoice to be created and expect 201 response returned'() {
-        when: "build a invoice create request"
-        Invoice invoice = Invoice.builder()
-                .invoiceId(INVOICE_ID)
-                .invoiceNumber(INVOICE_NUMBER)
-                .grossAmount(GROSS_AMOUNT)
-                .gstAmount(GST_AMOUNT)
-                .netAmount(NET_AMOUNT)
-                .receiptDate(RECEIPT_DATE)
-                .paymentDueDate(PAYMENT_DUE_DATE)
-                .totalNumTrxn(TOTAL_NUM_TRXN)
-                .build()
-        and: "mock invoice service and mock request"
+    def 'Given a invoice #scenario to be created and expect 201 response returned'() {
+        given:"mockInvoiceService"
         invoiceService.createInvoice(_ as Invoice) >> {}
+
+        when: "build a invoice create request"
+        Invoice invoice = buildStandardInvoiceWithTransaction()
+        and: "mock request"
         def res = mockMvc.perform(MockMvcRequestBuilders
                 .post("/api/v1/invoice")
                 .header(AUTHORIZATION, AUTHORIZATION_VALUE)
@@ -92,7 +85,7 @@ class InvoiceControllerTest extends Specification {
         res.getResponse().getStatus() == 201
     }
 
-    def 'Given a invalid invoice to be created and expect 400 response returned in #scenarion'() {
+    def 'Given a invalid invoice to be created and expect 400 response returned in #scenario'() {
         when: "build a invoice create request"
         Invoice invoice = Invoice.builder()
                 .invoiceId(invoiceIdInput)
@@ -103,9 +96,9 @@ class InvoiceControllerTest extends Specification {
                 .receiptDate(receiptDateInput)
                 .paymentDueDate(paymentDueDateInput)
                 .totalNumTrxn(totalNumTrxnInput)
+                .transactionList(transactionListInput)
                 .build()
-        and: "mock invoice service and mock request"
-        invoiceService.createInvoice(_ as Invoice) >> {}
+
         def res = mockMvc.perform(MockMvcRequestBuilders
                 .post("/api/v1/invoice")
                 .header(AUTHORIZATION, AUTHORIZATION_VALUE)
@@ -123,20 +116,21 @@ class InvoiceControllerTest extends Specification {
         }
 
         where: "have different scenarios"
-        scenarion          | invoiceIdInput | invoiceNumberInput | grossAmountInput | gstAmountInput | netAmountInput | receiptDateInput | paymentDueDateInput | totalNumTrxnInput || errorInput
-        "InvalidInvoiceId" | ""             | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "invoiceId must not be blank"
-        "InvalidInvNumber" | INVOICE_ID     | ""                 | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "invoiceNumber must not be blank"
-        "InvalidGrossAmt"  | INVOICE_ID     | INVOICE_NUMBER     | null             | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "grossAmount must not be empty"
-        "InvalidGstAmt"    | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | null           | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "gstAmount must not be empty"
-        "InvalidNetAmt"    | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | null           | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "netAmount must not be empty"
-        "InvalidRecDate1"  | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | ""               | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "receiptDate must not be blank"
-        "InvalidRecDate2"  | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | "01-01-2025"     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    || "Invalid Date Time Format"
-        "InvalidPmtDue1"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | null                | TOTAL_NUM_TRXN    || "paymentDueDate must not be blank"
-        "InvalidPmtDue2"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | "01-01-2025"        | TOTAL_NUM_TRXN    || "Invalid Date Time Format"
-        "InvalidNumTrxn"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | null              || "totalNumTrxn must not be empty"
+        scenario           | invoiceIdInput | invoiceNumberInput | grossAmountInput | gstAmountInput | netAmountInput | receiptDateInput | paymentDueDateInput | totalNumTrxnInput | transactionListInput                || errorInput
+        "InvalidInvoiceId" | ""             | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "invoiceId must not be blank"
+        "InvalidInvNumber" | INVOICE_ID     | ""                 | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "invoiceNumber must not be blank"
+        "InvalidGrossAmt"  | INVOICE_ID     | INVOICE_NUMBER     | null             | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "grossAmount must not be empty"
+        "InvalidGstAmt"    | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | null           | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "gstAmount must not be empty"
+        "InvalidNetAmt"    | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | null           | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "netAmount must not be empty"
+        "InvalidRecDate1"  | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | ""               | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "receiptDate must not be blank"
+        "InvalidRecDate2"  | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | "01-01-2025"     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "Invalid Date Time Format"
+        "InvalidPmtDue1"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | null                | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "paymentDueDate must not be blank"
+        "InvalidPmtDue2"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | "01-01-2025"        | TOTAL_NUM_TRXN    | List.of(buildStandardTransaction()) || "Invalid Date Time Format"
+        "InvalidNumTrxn"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | null              | List.of(buildStandardTransaction()) || "totalNumTrxn must not be empty"
+        "InvalidNumTrxn"   | INVOICE_ID     | INVOICE_NUMBER     | GROSS_AMOUNT     | GST_AMOUNT     | NET_AMOUNT     | RECEIPT_DATE     | PAYMENT_DUE_DATE    | TOTAL_NUM_TRXN    | null                                || "transactionList must not be null"
     }
 
-    def 'Given a invoice with transactions to be created and expect 400 response returned in #scenarion'() {
+    def 'Given a invoice with transactions to be created and expect 400 response returned in #scenario'() {
         when: "build a invoice create request"
         Invoice invoice = Invoice.builder()
                 .invoiceId(INVOICE_ID)
@@ -156,10 +150,8 @@ class InvoiceControllerTest extends Specification {
                         .netTransactionAmount(netTrxnAmtInput)
                         .gstAmount(gstAmtInput)
                         .build()
-                ))
-                .build()
-        and: "mock invoice service and mock request"
-        invoiceService.createInvoice(_ as Invoice) >> {}
+                )).build()
+
         def res = mockMvc.perform(MockMvcRequestBuilders
                 .post("/api/v1/invoice")
                 .header(AUTHORIZATION, AUTHORIZATION_VALUE)
@@ -177,19 +169,63 @@ class InvoiceControllerTest extends Specification {
         }
 
         where: "have different scenario"
-        scenarion              | trxnInput | dateReceivedInput | trxnDateInput | billingPeriodStartInput | billingPeriodEndInput | netTrxnAmtInput | gstAmtInput     || errorInput
-        "InvalidTrxn"          | ""        | DATE_RECEIVED     | TRXN_DATE     | BILLING_STRAT           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "transactionId must not be blank"
-        "InvalidDateReceived1" | TRXN_ID   | ""                | TRXN_DATE     | BILLING_STRAT           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "dateReceived must not be blank"
-        "InvalidDateReceived2" | TRXN_ID   | "01-01-2025"      | TRXN_DATE     | BILLING_STRAT           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
-        "InvalidTrxnDate1"     | TRXN_ID   | DATE_RECEIVED     | null          | BILLING_STRAT           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "transactionDate must not be blank"
-        "InvalidTrxnDate2"     | TRXN_ID   | DATE_RECEIVED     | "01-01-2025"  | BILLING_STRAT           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
+        scenario | trxnInput | dateReceivedInput | trxnDateInput | billingPeriodStartInput | billingPeriodEndInput | netTrxnAmtInput | gstAmtInput || errorInput
+        "InvalidTrxn"          | ""        | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "transactionId must not be blank"
+        "InvalidDateReceived1" | TRXN_ID   | ""                | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "dateReceived must not be blank"
+        "InvalidDateReceived2" | TRXN_ID   | "01-01-2025"      | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "Invalid Date Time Format"
+        "InvalidTrxnDate1"     | TRXN_ID   | DATE_RECEIVED     | null          | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "transactionDate must not be blank"
+        "InvalidTrxnDate2"     | TRXN_ID   | DATE_RECEIVED     | "01-01-2025"  | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "Invalid Date Time Format"
         "InvalidBillingStart"  | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | "01-01-2025"            | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
-        "InvalidBillingEnd"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_STRAT           | "01-01-2025"          | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
-        "InvalidNetTrxnAmt"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_STRAT           | BILLING_END           | null            | TRXN_GST_AMOUNT || "netTrxnAmount must not be empty"
-        "InvalidGstAmt"        | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_STRAT           | BILLING_END           | NET_TRXN_AMT    | null            || "gstAmount must not be empty"
+        "InvalidBillingEnd"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | "01-01-2025" | NET_TRXN_AMT | TRXN_GST_AMOUNT || "Invalid Date Time Format"
+        "InvalidNetTrxnAmt"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | BILLING_END  | null         | TRXN_GST_AMOUNT || "netTrxnAmount must not be empty"
+        "InvalidGstAmt"        | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | null            || "gstAmount must not be empty"
     }
 
-    def 'Given a request to get All Invoice and expect 200 response returned' () {
+    def 'Given a request with Page params to get All Invoice and expect 200 response returned'() {
+        given: "stub response for invoice service"
 
+        List<Invoice> mockInvoices = [buildStandardInvoiceWithTransaction()]
+        invoiceService.getAllInvoice(_ as Integer, _ as Integer) >> mockInvoices
+
+        when: "build request"
+        def res = mockMvc.perform(MockMvcRequestBuilders
+                .get("/api/v1/invoice")
+                .header(AUTHORIZATION, AUTHORIZATION_VALUE)).andReturn()
+
+
+        def invoices = objectMapper.readValue(res.getResponse().getContentAsString(), new TypeReference<List<Invoice>>() {
+        })
+
+        then: "expect status is return"
+
+        res.getResponse().getStatus() == 200
+        invoices.size() == 1
+    }
+
+    def buildStandardInvoiceWithTransaction() {
+        return Invoice.builder()
+                .invoiceId(INVOICE_ID)
+                .invoiceNumber(INVOICE_NUMBER)
+                .grossAmount(GROSS_AMOUNT)
+                .gstAmount(GST_AMOUNT)
+                .netAmount(NET_AMOUNT)
+                .receiptDate(RECEIPT_DATE)
+                .paymentDueDate(PAYMENT_DUE_DATE)
+                .totalNumTrxn(TOTAL_NUM_TRXN)
+                .transactionList(List.of(
+                        buildStandardTransaction()
+                )).build()
+    }
+
+    def buildStandardTransaction() {
+        return Transaction.builder()
+                .transactionId(TRXN_ID)
+                .dateReceived(DATE_RECEIVED)
+                .transactionDate(TRXN_DATE)
+                .billingPeriodStart(BILLING_START)
+                .billingPeriodEnd(BILLING_START)
+                .netTransactionAmount(NET_TRXN_AMT)
+                .gstAmount(TRXN_GST_AMOUNT)
+                .build()
     }
 }

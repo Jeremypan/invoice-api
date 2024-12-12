@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
@@ -67,10 +66,7 @@ public class InvoiceServiceImpl implements InvoiceService{
     }
 
     private boolean isValidNumberOfTransaction(Invoice invoice) {
-        if (invoice.transactionList() != null) {
-            return invoice.totalNumTrxn() == invoice.transactionList().size();
-        }
-        return invoice.totalNumTrxn()==0;
+        return invoice.totalNumTrxn()==invoice.transactionList().size();
     }
 
     private boolean isValidTotalTransactionAmount(Invoice invoice) {

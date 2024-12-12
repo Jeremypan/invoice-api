@@ -26,7 +26,6 @@ public class DateTimeValidator implements ConstraintValidator<ValidDateTime, Str
                 return true;
             }
             LocalDateTime.parse(value, DateTimeFormatter.ofPattern(this.pattern));
-            System.out.println("parseSuccessfully");
             return true;
         } catch (DateTimeParseException exception) {
             return false;

@@ -14,7 +14,6 @@ import java.util.List;
 
 @Builder
 @JsonIgnoreProperties
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record Invoice(
         @NotBlank(message = "invoiceId must not be blank")
         String invoiceId,
@@ -34,8 +33,8 @@ public record Invoice(
         String paymentDueDate,
         @NotNull(message = "totalNumTrxn must not be empty")
         Integer totalNumTrxn,
-        @Nullable
         @JsonProperty("transactions")
+        @NotNull(message = "transactionList must not be null")
         List<@Valid Transaction> transactionList
 ) {
 }
