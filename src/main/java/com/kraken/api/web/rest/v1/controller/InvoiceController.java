@@ -54,8 +54,6 @@ public class InvoiceController {
             path = "/invoice/{invoiceId}/status"
     )
     public ResponseEntity<?> getInvoiceStatus(@PathVariable String invoiceId) {
-        return ResponseEntity.status(204).body(invoiceId);
+        return ResponseEntity.status(200).body(invoiceService.validInvoice(invoiceId));
     }
-
-
 }

@@ -1,16 +1,22 @@
 package com.kraken.api.service;
 
 import com.kraken.api.model.Invoice;
+import com.kraken.api.model.InvoiceStatus;
+import com.kraken.api.model.Status;
 import com.kraken.api.model.Transaction;
 import com.kraken.api.model.entity.InvoiceEntity;
 import com.kraken.api.model.entity.TransactionEntity;
 import com.kraken.api.repository.InvoiceRepository;
 import com.kraken.api.utils.DateConverter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InvoiceServiceImpl implements InvoiceService{
@@ -18,13 +24,19 @@ public class InvoiceServiceImpl implements InvoiceService{
     private final InvoiceRepository invoiceRepository;
 
     @Override
-    public void createInvoice(Invoice invoice) {
+    public void createInvoice(final Invoice invoice) {
         invoiceRepository.saveAndFlush(covertToInvoiceEntity(invoice));
     }
 
     @Override
-    public Invoice getInvoice(String invoiceId) {
-        return convertToInvoice(invoiceRepository.getInvoiceEntityByInvoiceId((invoiceId)));
+    public Invoice getInvoice(final String invoiceId) {
+        final var invoiceEntity = invoiceRepository.getInvoiceEntityByInvoiceId(invoiceId);
+        if (invoiceEntity.isPresent()) {
+            return convertToInvoice(invoiceEntity.get());
+        } else {
+            log.error("There is no invoice with id={}", invoiceId);
+            throw new RuntimeException("fix it later");
+        }
     }
 
     @Override
@@ -34,7 +46,31 @@ public class InvoiceServiceImpl implements InvoiceService{
         ).toList();
     }
 
-    private InvoiceEntity covertToInvoiceEntity(Invoice invoice) {
+    @Override
+    public InvoiceStatus validInvoice(final String invoiceId) {
+        final var invoice = getInvoice(invoiceId);
+
+        if (!isValidNumberOfTransaction(invoice)) {
+            return InvoiceStatus.builder().status(Status.INVALID).reason("The number of lines does not match the number of transactions").build();
+        }
+
+        if (!isValidTotalTransactionAmount(invoice)) {
+            return InvoiceStatus.builder().status(Status.INVALID).reason("The total value of transaction lines does not add up to the invoice total").build();
+        }
+
+        return InvoiceStatus.builder().status(Status.VALID).build();
+    }
+
+    private boolean isValidNumberOfTransaction(Invoice invoice) {
+        return invoice.totalNumTrxn() == invoice.transactionList().size();
+    }
+
+    private boolean isValidTotalTransactionAmount(Invoice invoice) {
+        return BigDecimal.valueOf(invoice.netAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.netTransactionAmount())).reduce(BigDecimal.ZERO, BigDecimal::add))
+                && BigDecimal.valueOf(invoice.gstAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.gstAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+
+    private InvoiceEntity covertToInvoiceEntity(final Invoice invoice) {
         InvoiceEntity invoiceEntity = new InvoiceEntity();
         invoiceEntity.setInvoiceId(invoice.invoiceId());
         invoiceEntity.setInvoiceNum(invoice.invoiceNumber());
@@ -62,7 +98,7 @@ public class InvoiceServiceImpl implements InvoiceService{
         return invoiceEntity;
     }
 
-    private Invoice convertToInvoice(InvoiceEntity invoiceEntity) {
+    private Invoice convertToInvoice(final InvoiceEntity invoiceEntity) {
         return Invoice.builder()
                 .invoiceId(invoiceEntity.getInvoiceId())
                 .invoiceNumber(invoiceEntity.getInvoiceNum())
@@ -78,7 +114,7 @@ public class InvoiceServiceImpl implements InvoiceService{
                                     .transactionId(transactionEntity.getTransactionId())
                                     .dateReceived(DateConverter.convertDateToString(transactionEntity.getDateReceived()))
                                     .transactionDate(DateConverter.convertDateToString(transactionEntity.getTransactionDate()))
-                                    .billingPeriodEnd(DateConverter.convertDateToString(transactionEntity.getBillingPeriodStart()))
+                                    .billingPeriodStart(DateConverter.convertDateToString(transactionEntity.getBillingPeriodStart()))
                                     .billingPeriodEnd(DateConverter.convertDateToString(transactionEntity.getBillingPeriodEnd()))
                                     .netTransactionAmount(transactionEntity.getNetTransactionAmount())
                                     .gstAmount(transactionEntity.getGstAmount())
