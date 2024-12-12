@@ -4,6 +4,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class InvoiceConstants {
-    public static final String APPLICATION_JSON="application/json";
+public final class InvoiceApiConstants {
+    public static final String AUTHORIZATION = "Authorization";
 }

@@ -2,16 +2,19 @@ package com.kraken.api.web.rest.v1.controller;
 
 import com.kraken.api.model.Invoice;
 import com.kraken.api.service.InvoiceService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+@Validated
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
@@ -23,7 +26,7 @@ public class InvoiceController {
 
     )
     public ResponseEntity<?> createInvoice(
-            @RequestBody Invoice invoice
+            @RequestBody @Valid Invoice invoice
     ) {
         log.info("Creating Invoice");
         invoiceService.createInvoice(invoice);
@@ -35,8 +38,8 @@ public class InvoiceController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             path = "/invoice"
     )
-    public ResponseEntity<?> getInvoice() {
-        return ResponseEntity.status(200).body(invoiceService.getAllInvoice());
+    public ResponseEntity<?> getInvoice(@RequestParam(defaultValue = "0") Integer pageNo, @RequestParam(defaultValue = "10") Integer pageSize) {
+        return ResponseEntity.status(200).body(invoiceService.getAllInvoice(pageNo, pageSize));
     }
 
     @RequestMapping(

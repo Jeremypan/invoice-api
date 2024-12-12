@@ -11,6 +11,9 @@ import com.kraken.api.repository.InvoiceRepository;
 import com.kraken.api.utils.DateConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
@@ -42,10 +45,10 @@ public class InvoiceServiceImpl implements InvoiceService{
     }
 
     @Override
-    public List<Invoice> getAllInvoice() {
-        return invoiceRepository.findAll().stream().map(
-                this::convertToInvoice
-        ).toList();
+    public List<Invoice> getAllInvoice(Integer pageNo, Integer pageSize) {
+        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNo);
+        Page<InvoiceEntity> invoiceEntities = invoiceRepository.findAll(pageable);
+        return invoiceEntities.stream().map(this::convertToInvoice).toList();
     }
 
     @Override
@@ -64,7 +67,10 @@ public class InvoiceServiceImpl implements InvoiceService{
     }
 
     private boolean isValidNumberOfTransaction(Invoice invoice) {
-        return invoice.totalNumTrxn() == invoice.transactionList().size();
+        if (invoice.transactionList() != null) {
+            return invoice.totalNumTrxn() == invoice.transactionList().size();
+        }
+        return invoice.totalNumTrxn()==0;
     }
 
     private boolean isValidTotalTransactionAmount(Invoice invoice) {
