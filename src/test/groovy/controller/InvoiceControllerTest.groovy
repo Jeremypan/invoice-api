@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kraken.api.InvoiceApplication
 import com.kraken.api.exception.model.Error
 import com.kraken.api.model.Invoice
+import com.kraken.api.model.InvoiceStatus
+import com.kraken.api.model.Status
 import com.kraken.api.model.Transaction
 import com.kraken.api.service.InvoiceService
 import org.spockframework.spring.SpringBean
@@ -57,6 +59,12 @@ class InvoiceControllerTest extends Specification {
     Double NET_TRXN_AMT = 32.00
     @Shared
     Double TRXN_GST_AMOUNT = 3.20
+
+    @Shared
+    String INVALID_REASON_TRXN_LINES = "The number of lines does not match the number of transactions"
+
+    @Shared
+    String INVALID_REASON_TRXN_AMT = "The total value of transaction lines does not add up to the invoice total"
 
     @SpringBean
     InvoiceService invoiceService=Mock(InvoiceService.class);
@@ -112,7 +120,8 @@ class InvoiceControllerTest extends Specification {
         with(error) {
             it.path() == "/api/v1/invoice"
             it.status() == String.valueOf(HttpStatus.BAD_REQUEST.value())
-            it.error() == errorInput
+            it.error() == HttpStatus.BAD_REQUEST.getReasonPhrase()
+            it.detail() == errorInput
         }
 
         where: "have different scenarios"
@@ -165,7 +174,8 @@ class InvoiceControllerTest extends Specification {
         with(error) {
             it.path() == "/api/v1/invoice"
             it.status() == String.valueOf(HttpStatus.BAD_REQUEST.value())
-            it.error() == errorInput
+            it.error() == HttpStatus.BAD_REQUEST.getReasonPhrase()
+            it.detail() == errorInput
         }
 
         where: "have different scenario"
@@ -190,6 +200,8 @@ class InvoiceControllerTest extends Specification {
         when: "build request"
         def res = mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/v1/invoice")
+                .param("PageNo", "0")
+                .param("pageSize", "1")
                 .header(AUTHORIZATION, AUTHORIZATION_VALUE)).andReturn()
 
 
@@ -201,6 +213,99 @@ class InvoiceControllerTest extends Specification {
         res.getResponse().getStatus() == 200
         invoices.size() == 1
     }
+
+    def 'Given a request in #scenario to get All Invoice and expect 400 response returned'() {
+        when: "build request"
+        def res = mockMvc.perform(MockMvcRequestBuilders
+                .get(urlInput)
+                .header(AUTHORIZATION, AUTHORIZATION_VALUE)).andReturn()
+
+        def error = objectMapper.readValue(res.getResponse().getContentAsString(), Error.class)
+        then: "expect status is return"
+
+        res.getResponse().getStatus() == 400
+        with(error) {
+            it.path() == "/api/v1/invoice"
+            it.status() == String.valueOf(HttpStatus.BAD_REQUEST.value())
+            it.error() == HttpStatus.BAD_REQUEST.getReasonPhrase()
+            it.detail() == errorInput
+        }
+
+        where: "various scenario"
+
+        scenario              | urlInput                               || errorInput
+        "invalid pageNoInput" | "/api/v1/invoice?pageNo=-1&pageSize=1" || "pageNo must not be less than 0"
+        "invalid pageSzInput" | "/api/v1/invoice?pageNo=0&pageSize=0"  || "pageSize must be bigger than 0"
+    }
+
+    def 'Given a request to get Invoice By Invoice Id and expect 200 response returned'() {
+        given: "stub response for invoice service"
+
+        invoiceService.getInvoice(_ as String) >> buildStandardInvoiceWithTransaction()
+
+        when: "build request"
+        def res = mockMvc.perform(MockMvcRequestBuilders
+                .get("/api/v1/invoice/%s".formatted(INVOICE_ID))
+                .header(AUTHORIZATION, AUTHORIZATION_VALUE)).andReturn()
+
+
+        def invoice = objectMapper.readValue(res.getResponse().getContentAsString(), Invoice.class)
+
+        then: "expect status is return"
+
+        res.getResponse().getStatus() == 200
+        with(invoice) {
+            it.invoiceId() == INVOICE_ID
+            it.invoiceNumber() == INVOICE_NUMBER
+            it.grossAmount() == GROSS_AMOUNT
+            it.gstAmount() == GST_AMOUNT
+            it.netAmount() == NET_AMOUNT
+            it.receiptDate() == RECEIPT_DATE
+            it.paymentDueDate() == PAYMENT_DUE_DATE
+            it.totalNumTrxn() == TOTAL_NUM_TRXN
+            it.transactionList().size() == 1
+            with(it.transactionList().getFirst()) {
+                it.transactionId() == TRXN_ID
+                it.dateReceived() == DATE_RECEIVED
+                it.transactionDate() == TRXN_DATE
+                it.billingPeriodStart() == BILLING_START
+                it.billingPeriodEnd() == BILLING_END
+                it.netTransactionAmount() == NET_TRXN_AMT
+                it.gstAmount() == TRXN_GST_AMOUNT
+            }
+        }
+    }
+
+    def 'Given a request to validate status in #scenario and expect 200 response returned'() {
+        given: "stub response for invoice service"
+
+        invoiceService.validateInvoiceStatus(_ as String) >> invoiceStatusOutput
+
+        when: "build request"
+        def res = mockMvc.perform(MockMvcRequestBuilders
+                .get("/api/v1/invoice/%s/status".formatted(INVOICE_ID))
+                .header(AUTHORIZATION, AUTHORIZATION_VALUE)).andReturn()
+
+
+        def invoiceStatus = objectMapper.readValue(res.getResponse().getContentAsString(), InvoiceStatus.class)
+
+        then: "expect status is return"
+
+        res.getResponse().getStatus() == 200
+        with(invoiceStatus) {
+            if (it.status() != Status.VALID) {
+                it.reason() == reasonOutput
+            }
+            it.status() == statusOutput
+        }
+
+        where: "various scenarios"
+        scenario           | invoiceStatusOutput                                         || reasonOutput              | statusOutput
+        "Invalid Status 1" | buildInvoiceInvalidInvoiceStatus(INVALID_REASON_TRXN_LINES) || INVALID_REASON_TRXN_LINES | Status.INVALID
+        "Invalid Status 2" | buildInvoiceInvalidInvoiceStatus(INVALID_REASON_TRXN_AMT)   || INVALID_REASON_TRXN_AMT   | Status.INVALID
+        "Valid Status"     | buildInvoiceValidInvoiceStatus()                            || null                      | Status.VALID
+    }
+
 
     def buildStandardInvoiceWithTransaction() {
         return Invoice.builder()
@@ -223,9 +328,17 @@ class InvoiceControllerTest extends Specification {
                 .dateReceived(DATE_RECEIVED)
                 .transactionDate(TRXN_DATE)
                 .billingPeriodStart(BILLING_START)
-                .billingPeriodEnd(BILLING_START)
+                .billingPeriodEnd(BILLING_END)
                 .netTransactionAmount(NET_TRXN_AMT)
                 .gstAmount(TRXN_GST_AMOUNT)
                 .build()
+    }
+
+    def buildInvoiceValidInvoiceStatus() {
+        InvoiceStatus.builder().status(Status.VALID).build()
+    }
+
+    def buildInvoiceInvalidInvoiceStatus(String reason) {
+        InvoiceStatus.builder().status(Status.INVALID).reason(reason).build()
     }
 }

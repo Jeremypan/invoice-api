@@ -12,8 +12,8 @@ import com.kraken.api.utils.DateConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,12 @@ public class InvoiceServiceImpl implements InvoiceService{
 
     @Override
     public void createInvoice(final Invoice invoice) {
-        invoiceRepository.saveAndFlush(covertToInvoiceEntity(invoice));
+        try {
+            invoiceRepository.saveAndFlush(covertToInvoiceEntity(invoice));
+        } catch (Exception exception) {
+            log.error("Unable to create invoice due to the exception={}", exception.getMessage());
+            throw new InvoiceServiceException(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatusCode.valueOf(500), "Unable to create invoice");
+        }
     }
 
     @Override
@@ -39,19 +44,21 @@ public class InvoiceServiceImpl implements InvoiceService{
             return convertToInvoice(invoiceEntity.get());
         } else {
             log.error("There is no invoice with id={}", invoiceId);
-            throw new InvoiceServiceException(HttpStatusCode.valueOf(400), "Get Invoice By Id=%s failed".formatted(invoiceId));
+            throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400), "Unable to find Invoice By Id=%s".formatted(invoiceId));
         }
     }
 
     @Override
-    public List<Invoice> getAllInvoice(Integer pageNo, Integer pageSize) {
+    public List<Invoice> getAllInvoice(final Integer pageNo, final Integer pageSize) {
         Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNo);
+        log.info("getting all invoice");
         Page<InvoiceEntity> invoiceEntities = invoiceRepository.findAll(pageable);
+        log.info("getting all invoice={}", invoiceEntities);
         return invoiceEntities.stream().map(this::convertToInvoice).toList();
     }
 
     @Override
-    public InvoiceStatus validInvoice(final String invoiceId) {
+    public InvoiceStatus validateInvoiceStatus(final String invoiceId) {
         final var invoice = getInvoice(invoiceId);
 
         if (!isValidNumberOfTransaction(invoice)) {
@@ -65,11 +72,11 @@ public class InvoiceServiceImpl implements InvoiceService{
         return InvoiceStatus.builder().status(Status.VALID).build();
     }
 
-    private boolean isValidNumberOfTransaction(Invoice invoice) {
+    private boolean isValidNumberOfTransaction(final Invoice invoice) {
         return invoice.totalNumTrxn()==invoice.transactionList().size();
     }
 
-    private boolean isValidTotalTransactionAmount(Invoice invoice) {
+    private boolean isValidTotalTransactionAmount(final Invoice invoice) {
         return BigDecimal.valueOf(invoice.netAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.netTransactionAmount())).reduce(BigDecimal.ZERO, BigDecimal::add))
                 && BigDecimal.valueOf(invoice.gstAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.gstAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
     }

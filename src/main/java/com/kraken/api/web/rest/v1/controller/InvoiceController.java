@@ -27,7 +27,7 @@ public class InvoiceController {
 
     )
     public ResponseEntity<?> createInvoice(
-            @RequestBody @Valid Invoice invoice
+            @RequestBody @Valid final Invoice invoice
     ) {
         log.info("Creating Invoice");
         invoiceService.createInvoice(invoice);
@@ -40,11 +40,9 @@ public class InvoiceController {
             path = "/invoice"
     )
     public ResponseEntity<?> getInvoice(@RequestParam(defaultValue = "0")
-                                        @Min(value = 0, message = "pageNo must not be less than 0")
-                                        Integer pageNo,
+                                        @Min(value = 0, message = "pageNo must not be less than 0") final Integer pageNo,
                                         @RequestParam(defaultValue = "10")
-                                        @Min(value = 1, message = "pageSize must be bigger than 0")
-                                        Integer pageSize) {
+                                        @Min(value = 1, message = "pageSize must be bigger than 0") final Integer pageSize) {
         final var invoices = invoiceService.getAllInvoice(pageNo, pageSize);
         return ResponseEntity.status(200).body(invoices);
     }
@@ -54,7 +52,7 @@ public class InvoiceController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             path = "/invoice/{invoiceId}"
     )
-    public ResponseEntity<?> getInvoice(@PathVariable String invoiceId) {
+    public ResponseEntity<?> getInvoice(@PathVariable final String invoiceId) {
         return ResponseEntity.status(200).body(invoiceService.getInvoice(invoiceId));
     }
 
@@ -64,6 +62,6 @@ public class InvoiceController {
             path = "/invoice/{invoiceId}/status"
     )
     public ResponseEntity<?> getInvoiceStatus(@PathVariable String invoiceId) {
-        return ResponseEntity.status(200).body(invoiceService.validInvoice(invoiceId));
+        return ResponseEntity.status(200).body(invoiceService.validateInvoiceStatus(invoiceId));
     }
 }
