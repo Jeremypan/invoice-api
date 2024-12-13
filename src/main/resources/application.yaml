@@ -3,11 +3,9 @@ spring:
     name: invoice
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/invoice
-    username: postgres
-    password: mysecretpassword
 
-basic:
-  auth:
-    username: user
-    password: password
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs

@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/invoice
+    username: postgres
+    password: mysecretpassword
+
+basic:
+  auth:
+    username: user
+    password: password

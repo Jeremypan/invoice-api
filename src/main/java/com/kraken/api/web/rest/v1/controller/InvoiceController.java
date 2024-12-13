@@ -2,6 +2,7 @@ package com.kraken.api.web.rest.v1.controller;
 
 import com.kraken.api.model.Invoice;
 import com.kraken.api.service.InvoiceService;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
