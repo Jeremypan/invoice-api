@@ -1,0 +1,198 @@
+{
+	"info": {
+		"_postman_id": "681c9209-f1d6-43e8-86c7-398e3c8feee2",
+		"name": "Invoice-Localhost",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40360621"
+	},
+	"item": [
+		{
+			"name": "getAllInvoice",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "password",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/invoice",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"invoice"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getInvoiceById",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "password",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/invoice/{invoiceId}",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"invoice",
+						"{invoiceId}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "validInvoice",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "password",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/invoice/{InvoiceId}/status",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"invoice",
+						"{InvoiceId}",
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createInvoice",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "password",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"invoiceId\": \"31624\",\n    \"invoiceNumber\": \"588008606\",\n    \"grossAmount\": \"36.87\",\n    \"gstAmount\": \"3.36\",\n    \"netAmount\": \"33.51\",\n    \"receiptDate\": \"2007-12-12 18:30:52.000\",\n    \"paymentDueDate\": \"2006-04-28 00:00:00.000\",\n    \"totalNumTrxn\": \"4\",\n    \"transactions\": [\n        {\n            \"transactionId\": \"728523\",\n            \"dateReceived\": \"2007-12-12 00:00:00.000\",\n            \"transactionDate\": \"2006-03-17 00:00:00.000\",\n            \"billingPeriodStart\": \"2005-12-14 00:00:00.000\",\n            \"billingPeriodEnd\": \"2005-12-31 00:00:00.000\",\n            \"netTransactionAmount\": \"1.07\",\n            \"gstAmount\": \"0.11\"\n        },\n        {\n            \"transactionId\": \"728525\",\n            \"dateReceived\": \"2007-12-12 00:00:00.000\",\n            \"transactionDate\": \"2006-03-17 00:00:00.000\",\n            \"billingPeriodStart\": \"2005-12-14 00:00:00.000\",\n            \"billingPeriodEnd\": \"2005-12-31 00:00:00.000\",\n            \"netTransactionAmount\": \"5.90\",\n            \"gstAmount\": \"0.59\"\n        },\n        {\n            \"transactionId\": \"728527\",\n            \"dateReceived\": \"2007-12-12 00:00:00.000\",\n            \"transactionDate\": \"2006-03-17 00:00:00.000\",\n            \"billingPeriodStart\": \"2006-01-01 00:00:00.000\",\n            \"billingPeriodEnd\": \"2006-03-17 00:00:00.000\",\n            \"netTransactionAmount\": \"4.06\",\n            \"gstAmount\": \"0.41\"\n        },\n        {\n            \"transactionId\": \"728529\",\n            \"dateReceived\": \"2007-12-12 00:00:00.000\",\n            \"transactionDate\": \"2006-03-17 00:00:00.000\",\n            \"billingPeriodStart\": \"2006-01-01 00:00:00.000\",\n            \"billingPeriodEnd\": \"2006-03-17 00:00:00.000\",\n            \"netTransactionAmount\": \"22.48\",\n            \"gstAmount\": \"2.25\"\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/invoice",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"invoice"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
