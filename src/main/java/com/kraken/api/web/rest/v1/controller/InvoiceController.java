@@ -1,8 +1,14 @@
 package com.kraken.api.web.rest.v1.controller;
 
+import com.kraken.api.exception.model.Error;
 import com.kraken.api.model.Invoice;
+import com.kraken.api.model.InvoiceStatus;
 import com.kraken.api.service.InvoiceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +33,14 @@ public class InvoiceController {
             path = "/invoice"
 
     )
+    @Operation(
+            summary = "Create Invoice",
+            description = "Create Invoice",
+            responses = {@ApiResponse(
+                    responseCode = "201",
+                    description = "No Response Content if it is successful")
+            }
+    )
     public ResponseEntity<?> createInvoice(
             @RequestBody @Valid final Invoice invoice
     ) {
@@ -39,6 +53,28 @@ public class InvoiceController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE,
             path = "/invoice"
+    )
+    @Operation(
+            summary = "Get a list of all invoice by optional params",
+            description = "Get a list of invoices: default params: pageNo=0 and pageSize=10",
+            responses = {@ApiResponse(
+                    responseCode = "200",
+                    description = "The response for all invoices result",
+                    content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    array = @ArraySchema(schema = @Schema(implementation = Invoice.class))
+                            )
+                    }),
+                    @ApiResponse(responseCode = "400",
+                            description = "The response for bad request",
+                            content = {
+                                    @Content(
+                                            mediaType = "application/json",
+                                            schema = @Schema(implementation = Error.class)
+                                    )
+                            })
+            }
     )
     public ResponseEntity<?> getInvoice(@RequestParam(defaultValue = "0")
                                         @Min(value = 0, message = "pageNo must not be less than 0") final Integer pageNo,
@@ -53,6 +89,28 @@ public class InvoiceController {
             produces = MediaType.APPLICATION_JSON_VALUE,
             path = "/invoice/{invoiceId}"
     )
+    @Operation(
+            summary = "Get invoice by invoiceId",
+            description = "Get invoice by invoiceId eg: 123456",
+            responses = {@ApiResponse(
+                    responseCode = "200",
+                    description = "The response for single invoice",
+                    content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Invoice.class)
+                            )
+                    }),
+                    @ApiResponse(responseCode = "400",
+                            description = "The response for bad request",
+                            content = {
+                                    @Content(
+                                            mediaType = "application/json",
+                                            schema = @Schema(implementation = Error.class)
+                                    )
+                            })
+            }
+    )
     public ResponseEntity<?> getInvoice(@PathVariable final String invoiceId) {
         return ResponseEntity.status(200).body(invoiceService.getInvoice(invoiceId));
     }
@@ -61,6 +119,28 @@ public class InvoiceController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE,
             path = "/invoice/{invoiceId}/status"
+    )
+    @Operation(
+            summary = "Get invoice Status by invoiceId",
+            description = "Get invoice status by invoiceId eg: 123456",
+            responses = {@ApiResponse(
+                    responseCode = "200",
+                    description = "The response for single invoice status",
+                    content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = InvoiceStatus.class)
+                            )
+                    }),
+                    @ApiResponse(responseCode = "400",
+                            description = "The response for bad request",
+                            content = {
+                                    @Content(
+                                            mediaType = "application/json",
+                                            schema = @Schema(implementation = Error.class)
+                                    )
+                            })
+            }
     )
     public ResponseEntity<?> getInvoiceStatus(@PathVariable String invoiceId) {
         return ResponseEntity.status(200).body(invoiceService.validateInvoiceStatus(invoiceId));

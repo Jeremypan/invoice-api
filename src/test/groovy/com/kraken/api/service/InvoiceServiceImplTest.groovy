@@ -88,47 +88,41 @@ class InvoiceServiceImplTest extends Specification {
     }
 
     def "getInvoiceSuccessful"() {
-        given: "mock response getInvoiceEntity"
-        invoiceRepository.getInvoiceEntityByInvoiceId(_ as String) >> Optional.of(buildStandardInvoiceEntity())
-
         when: "call get Invoice Service"
         def res = invoiceService.getInvoice(INVOICE_ID)
 
         then:
+        1 * invoiceRepository.getInvoiceEntityByInvoiceId(_ as String) >> Optional.of(buildStandardInvoiceEntity())
         noExceptionThrown()
         res == buildStandardResponseInvoiceWithTransaction()
 
     }
 
     def "getInvoiceUnSuccessful"() {
-        given: "mock response getInvoiceEntity"
-        invoiceRepository.getInvoiceEntityByInvoiceId(_ as String) >> Optional.empty()
-
         when: "call get Invoice Service"
         invoiceService.getInvoice(INVOICE_ID)
 
         then:
+        1 * invoiceRepository.getInvoiceEntityByInvoiceId(_ as String) >> Optional.empty()
         def ex = thrown(InvoiceServiceException)
         ex.getMessage() == "Unable to find Invoice By Id=%s".formatted(INVOICE_ID)
     }
 
     def "getAllInvoiceSuccessful"() {
-        given: "mock response getAllInvoice repository"
-        invoiceRepository.findAll(_ as Pageable) >> new PageImpl<InvoiceEntity>([buildStandardInvoiceEntity()])
         when: "call get Invoice Service"
         def invoices = invoiceService.getAllInvoice(0, 1)
         then:
         noExceptionThrown()
+        1 * invoiceRepository.findAll(_ as Pageable) >> new PageImpl<InvoiceEntity>([buildStandardInvoiceEntity()])
         invoices.size() == 1
         invoices.getFirst() == buildStandardResponseInvoiceWithTransaction()
     }
 
     def "validateInvoiceStatusSuccessful in #scenario"() {
-        given: "mock response getInvoiceById repository"
-        invoiceRepository.getInvoiceEntityByInvoiceId(_ as String) >> Optional.of(invoiceEntityOutput)
         when: "call get validateInvoiceStatus"
         def invoiceStatus = invoiceService.validateInvoiceStatus(INVOICE_ID)
         then:
+        1 * invoiceRepository.getInvoiceEntityByInvoiceId(INVOICE_ID) >> Optional.of(invoiceEntityOutput)
         noExceptionThrown()
         with(invoiceStatus) {
             if (it.status() == Status.INVALID) {
