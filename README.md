@@ -66,3 +66,9 @@ For current sample one:
 After the application is running, you can API Definition through ```http://<hostUrl>:8080/swagger-ui/index.html``` eg: ```http://localhost:8080/swagger-ui/index.html```
 
 Also, there is postman_collection.json as sample under apiCollections folder.
+
+#### 4. Run Unit Test #####
+Run Below Command
+```
+./gradlew test
+```
