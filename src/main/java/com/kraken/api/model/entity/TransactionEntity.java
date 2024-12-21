@@ -1,14 +1,23 @@
 package com.kraken.api.model.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
+import org.springframework.data.domain.Persistable;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
 @Entity
-@Table(name="transaction")
-public class TransactionEntity {
+@Table(name = "transaction")
+public class TransactionEntity implements Persistable<String> {
 
     @Id
     @Column(name = "transaction_id", nullable = false)
@@ -34,8 +43,21 @@ public class TransactionEntity {
     private LocalDate billingPeriodEnd;
 
     @Column(name = "net_transaction_amount", nullable = false)
-    private Double netTransactionAmount;
+    private BigDecimal netTransactionAmount;
 
     @Column(name = "gst_amount", nullable = false)
-    private Double gstAmount;
+    private BigDecimal gstAmount;
+
+    @Transient
+    private boolean isNewEntry = true;
+
+    @Override
+    public String getId() {
+        return this.transactionId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return this.isNewEntry;
+    }
 }

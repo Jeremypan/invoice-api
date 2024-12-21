@@ -16,7 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -77,9 +82,11 @@ public class InvoiceController {
             }
     )
     public ResponseEntity<?> getInvoice(@RequestParam(defaultValue = "0")
-                                        @Min(value = 0, message = "pageNo must not be less than 0") final Integer pageNo,
+                                        @Min(value = 0, message = "pageNo must not be less than 0")
+                                            final Integer pageNo,
                                         @RequestParam(defaultValue = "10")
-                                        @Min(value = 1, message = "pageSize must be bigger than 0") final Integer pageSize) {
+                                        @Min(value = 1, message = "pageSize must be bigger than 0")
+                                        final Integer pageSize) {
         final var invoices = invoiceService.getAllInvoice(pageNo, pageSize);
         return ResponseEntity.status(200).body(invoices);
     }
@@ -142,7 +149,7 @@ public class InvoiceController {
                             })
             }
     )
-    public ResponseEntity<?> getInvoiceStatus(@PathVariable String invoiceId) {
+    public ResponseEntity<?> getInvoiceStatus(final @PathVariable String invoiceId) {
         return ResponseEntity.status(200).body(invoiceService.validateInvoiceStatus(invoiceId));
     }
 }

@@ -11,6 +11,7 @@ import com.kraken.api.repository.InvoiceRepository;
 import com.kraken.api.utils.DateConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -18,12 +19,13 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class InvoiceServiceImpl implements InvoiceService{
+public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
 
@@ -31,9 +33,25 @@ public class InvoiceServiceImpl implements InvoiceService{
     public void createInvoice(final Invoice invoice) {
         try {
             invoiceRepository.saveAndFlush(covertToInvoiceEntity(invoice));
+        } catch (DataIntegrityViolationException exception) {
+            logErrorMessageForCreatingInvoice(exception);
+            if (exception.getMessage().contains("duplicate key")
+                    && (exception.getMessage().contains("invoice_pk")
+                    || exception.getMessage().contains("invoice_number_unique"))) {
+                throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400),
+                        "Unable to create invoice due to the duplicate record-invoice");
+            }
+            if (exception.getMessage().contains("duplicate key")
+                    && exception.getMessage().contains("transaction_pk")) {
+                throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400),
+                        "Unable to create invoice due to the duplicate record-transaction");
+            }
+            throw new InvoiceServiceException(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatusCode.valueOf(500),
+                    "Unable to create invoice");
         } catch (Exception exception) {
-            log.error("Unable to create invoice due to the exception={}", exception.getMessage());
-            throw new InvoiceServiceException(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatusCode.valueOf(500), "Unable to create invoice");
+            logErrorMessageForCreatingInvoice(exception);
+            throw new InvoiceServiceException(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatusCode.valueOf(500),
+                    "Unable to create invoice");
         }
     }
 
@@ -44,7 +62,8 @@ public class InvoiceServiceImpl implements InvoiceService{
             return convertToInvoice(invoiceEntity.get());
         } else {
             log.error("There is no invoice with id={}", invoiceId);
-            throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400), "Unable to find Invoice By Id=%s".formatted(invoiceId));
+            throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400),
+                    "Unable to find Invoice By Id=%s".formatted(invoiceId));
         }
     }
 
@@ -62,23 +81,38 @@ public class InvoiceServiceImpl implements InvoiceService{
         final var invoice = getInvoice(invoiceId);
 
         if (!isValidNumberOfTransaction(invoice)) {
-            return InvoiceStatus.builder().status(Status.INVALID).reason("The number of lines does not match the number of transactions").build();
+            return InvoiceStatus.builder()
+                    .status(Status.INVALID)
+                    .reason("The number of lines does not match the number of transactions").build();
         }
 
         if (!isValidTotalTransactionAmount(invoice)) {
-            return InvoiceStatus.builder().status(Status.INVALID).reason("The total value of transaction lines does not add up to the invoice total").build();
+            return InvoiceStatus.builder()
+                    .status(Status.INVALID)
+                    .reason("The total value of transactions does not add up to the invoice total").build();
         }
 
         return InvoiceStatus.builder().status(Status.VALID).build();
     }
 
     private boolean isValidNumberOfTransaction(final Invoice invoice) {
-        return invoice.totalNumTrxn()==invoice.transactionList().size();
+        return invoice.totalNumTrxn() == invoice.transactionList().size();
     }
 
     private boolean isValidTotalTransactionAmount(final Invoice invoice) {
-        return BigDecimal.valueOf(invoice.netAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.netTransactionAmount())).reduce(BigDecimal.ZERO, BigDecimal::add))
-                && BigDecimal.valueOf(invoice.gstAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.gstAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
+        return invoice.netAmount().setScale(2, RoundingMode.HALF_UP).equals(
+                invoice.transactionList().stream()
+                        .map(Transaction::netTransactionAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP))
+                && invoice.gstAmount().setScale(2, RoundingMode.HALF_UP)
+                .equals(invoice.transactionList().stream().map(Transaction::gstAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP))
+                && invoice.grossAmount().setScale(2, RoundingMode.HALF_UP)
+                .equals(invoice.transactionList().stream()
+                        .map(transaction -> transaction.gstAmount().add(transaction.netTransactionAmount()))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+
+
     }
 
     private InvoiceEntity covertToInvoiceEntity(final Invoice invoice) {
@@ -93,16 +127,16 @@ public class InvoiceServiceImpl implements InvoiceService{
         invoiceEntity.setTotalNumberTransaction(invoice.totalNumTrxn());
         invoiceEntity.setTransactionEntities(invoice.transactionList().stream().map(
                 transaction -> {
-                    TransactionEntity transactionEntity = new TransactionEntity();
-                    transactionEntity.setTransactionId(transaction.transactionId());
-                    transactionEntity.setTransactionDate(DateConverter.convertStringToDate(transaction.transactionDate()));
-                    transactionEntity.setDateReceived(DateConverter.convertStringToDate(transaction.dateReceived()));
-                    transactionEntity.setInvoice(invoiceEntity);
-                    transactionEntity.setInvoiceNumber(invoice.invoiceNumber());
-                    transactionEntity.setBillingPeriodStart(DateConverter.convertStringToDate(transaction.billingPeriodStart()));
-                    transactionEntity.setBillingPeriodEnd(DateConverter.convertStringToDate(transaction.billingPeriodEnd()));
-                    transactionEntity.setNetTransactionAmount(transaction.netTransactionAmount());
-                    transactionEntity.setGstAmount(transaction.gstAmount());
+        TransactionEntity transactionEntity = new TransactionEntity();
+        transactionEntity.setTransactionId(transaction.transactionId());
+        transactionEntity.setTransactionDate(DateConverter.convertStringToDate(transaction.transactionDate()));
+        transactionEntity.setDateReceived(DateConverter.convertStringToDate(transaction.dateReceived()));
+        transactionEntity.setInvoice(invoiceEntity);
+        transactionEntity.setInvoiceNumber(invoice.invoiceNumber());
+        transactionEntity.setBillingPeriodStart(DateConverter.convertStringToDate(transaction.billingPeriodStart()));
+        transactionEntity.setBillingPeriodEnd(DateConverter.convertStringToDate(transaction.billingPeriodEnd()));
+        transactionEntity.setNetTransactionAmount(transaction.netTransactionAmount());
+        transactionEntity.setGstAmount(transaction.gstAmount());
                     return transactionEntity;
                 }
         ).toList());
@@ -121,17 +155,21 @@ public class InvoiceServiceImpl implements InvoiceService{
                 .totalNumTrxn(invoiceEntity.getTotalNumberTransaction())
                 .transactionList(invoiceEntity.getTransactionEntities().stream().map(
                         transactionEntity -> {
-                            return Transaction.builder()
-                                    .transactionId(transactionEntity.getTransactionId())
-                                    .dateReceived(DateConverter.convertDateToString(transactionEntity.getDateReceived()))
-                                    .transactionDate(DateConverter.convertDateToString(transactionEntity.getTransactionDate()))
-                                    .billingPeriodStart(DateConverter.convertDateToString(transactionEntity.getBillingPeriodStart()))
-                                    .billingPeriodEnd(DateConverter.convertDateToString(transactionEntity.getBillingPeriodEnd()))
-                                    .netTransactionAmount(transactionEntity.getNetTransactionAmount())
-                                    .gstAmount(transactionEntity.getGstAmount())
-                                    .build();
+            return Transaction.builder()
+                    .transactionId(transactionEntity.getTransactionId())
+                    .dateReceived(DateConverter.convertDateToString(transactionEntity.getDateReceived()))
+                    .transactionDate(DateConverter.convertDateToString(transactionEntity.getTransactionDate()))
+                    .billingPeriodStart(DateConverter.convertDateToString(transactionEntity.getBillingPeriodStart()))
+                    .billingPeriodEnd(DateConverter.convertDateToString(transactionEntity.getBillingPeriodEnd()))
+                    .netTransactionAmount(transactionEntity.getNetTransactionAmount())
+                    .gstAmount(transactionEntity.getGstAmount())
+                    .build();
                         }
                 ).toList())
                 .build();
+    }
+
+    private void logErrorMessageForCreatingInvoice(final Exception exception) {
+        log.error("Unable to create invoice due to the exception={}", exception.getMessage());
     }
 }

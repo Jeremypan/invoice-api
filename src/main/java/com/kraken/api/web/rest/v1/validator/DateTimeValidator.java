@@ -9,20 +9,20 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-public class DateTimeValidator implements ConstraintValidator<ValidDateTime, String> {
+public final class DateTimeValidator implements ConstraintValidator<ValidDateTime, String> {
 
     private String pattern;
 
     @Override
-    public void initialize(ValidDateTime constraintAnnotation) {
+    public void initialize(final ValidDateTime constraintAnnotation) {
         this.pattern = constraintAnnotation.pattern();
         ConstraintValidator.super.initialize(constraintAnnotation);
     }
 
     @Override
-    public boolean isValid(String value, ConstraintValidatorContext constraintValidatorContext) {
+    public boolean isValid(final String value, final ConstraintValidatorContext constraintValidatorContext) {
         try {
-            if(value==null || StringUtils.isBlank(value)) {
+            if (value == null || StringUtils.isBlank(value)) {
                 return true;
             }
             LocalDateTime.parse(value, DateTimeFormatter.ofPattern(this.pattern));

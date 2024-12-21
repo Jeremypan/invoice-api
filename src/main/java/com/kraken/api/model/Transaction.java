@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
+import java.math.BigDecimal;
+
 @Builder
 public record Transaction(
         @NotBlank(message = "transactionId must not be blank")
@@ -20,8 +22,8 @@ public record Transaction(
         @ValidDateTime
         String billingPeriodEnd,
         @NotNull(message = "netTrxnAmount must not be empty")
-        Double netTransactionAmount,
+        BigDecimal netTransactionAmount,
         @NotNull(message = "gstAmount must not be empty")
-        Double gstAmount
+        BigDecimal gstAmount
 ) {
 }
