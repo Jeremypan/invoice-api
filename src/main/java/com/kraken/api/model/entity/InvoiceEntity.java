@@ -1,10 +1,13 @@
 package com.kraken.api.model.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import java.math.BigDecimal;
@@ -17,10 +20,10 @@ import java.util.List;
 public class InvoiceEntity implements Persistable<String> {
 
     @Id
-    @Column(name="invoice_id", nullable = false)
+    @Column(name = "invoice_id", nullable = false)
     String invoiceId;
 
-    @Column(name="invoice_number", nullable = false, unique = true)
+    @Column(name = "invoice_number", nullable = false, unique = true)
     String invoiceNum;
 
     @Column(name = "gross_amount", nullable = false)

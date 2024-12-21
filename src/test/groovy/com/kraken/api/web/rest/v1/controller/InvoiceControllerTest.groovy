@@ -68,7 +68,7 @@ class InvoiceControllerTest extends Specification {
     String INVALID_REASON_TRXN_AMT = "The total value of transaction lines does not add up to the invoice total"
 
     @SpringBean
-    InvoiceService invoiceService=Mock(InvoiceService.class);
+    InvoiceService invoiceService = Mock(InvoiceService.class)
 
     @Autowired
     MockMvc mockMvc
@@ -77,7 +77,7 @@ class InvoiceControllerTest extends Specification {
     ObjectMapper objectMapper
 
     def 'Given a invoice #scenario to be created and expect 201 response returned'() {
-        given:"mockInvoiceService"
+        given: "mockInvoiceService"
         invoiceService.createInvoice(_ as Invoice) >> {}
 
         when: "build a invoice create request"
@@ -180,16 +180,16 @@ class InvoiceControllerTest extends Specification {
         }
 
         where: "have different scenario"
-        scenario | trxnInput | dateReceivedInput | trxnDateInput | billingPeriodStartInput | billingPeriodEndInput | netTrxnAmtInput | gstAmtInput || errorInput
-        "InvalidTrxn"          | ""        | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "transactionId must not be blank"
-        "InvalidDateReceived1" | TRXN_ID   | ""                | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "dateReceived must not be blank"
-        "InvalidDateReceived2" | TRXN_ID   | "01-01-2025"      | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "Invalid Date Time Format"
-        "InvalidTrxnDate1"     | TRXN_ID   | DATE_RECEIVED     | null          | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "transactionDate must not be blank"
-        "InvalidTrxnDate2"     | TRXN_ID   | DATE_RECEIVED     | "01-01-2025"  | BILLING_START | BILLING_END  | NET_TRXN_AMT | TRXN_GST_AMOUNT || "Invalid Date Time Format"
+        scenario               | trxnInput | dateReceivedInput | trxnDateInput | billingPeriodStartInput | billingPeriodEndInput | netTrxnAmtInput | gstAmtInput     || errorInput
+        "InvalidTrxn"          | ""        | DATE_RECEIVED     | TRXN_DATE     | BILLING_START           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "transactionId must not be blank"
+        "InvalidDateReceived1" | TRXN_ID   | ""                | TRXN_DATE     | BILLING_START           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "dateReceived must not be blank"
+        "InvalidDateReceived2" | TRXN_ID   | "01-01-2025"      | TRXN_DATE     | BILLING_START           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
+        "InvalidTrxnDate1"     | TRXN_ID   | DATE_RECEIVED     | null          | BILLING_START           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "transactionDate must not be blank"
+        "InvalidTrxnDate2"     | TRXN_ID   | DATE_RECEIVED     | "01-01-2025"  | BILLING_START           | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
         "InvalidBillingStart"  | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | "01-01-2025"            | BILLING_END           | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
-        "InvalidBillingEnd"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | "01-01-2025" | NET_TRXN_AMT | TRXN_GST_AMOUNT || "Invalid Date Time Format"
-        "InvalidNetTrxnAmt"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | BILLING_END  | null         | TRXN_GST_AMOUNT || "netTrxnAmount must not be empty"
-        "InvalidGstAmt"        | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START | BILLING_END  | NET_TRXN_AMT | null            || "gstAmount must not be empty"
+        "InvalidBillingEnd"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START           | "01-01-2025"          | NET_TRXN_AMT    | TRXN_GST_AMOUNT || "Invalid Date Time Format"
+        "InvalidNetTrxnAmt"    | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START           | BILLING_END           | null            | TRXN_GST_AMOUNT || "netTrxnAmount must not be empty"
+        "InvalidGstAmt"        | TRXN_ID   | DATE_RECEIVED     | TRXN_DATE     | BILLING_START           | BILLING_END           | NET_TRXN_AMT    | null            || "gstAmount must not be empty"
     }
 
     def 'Given a request with Page params to get All Invoice and expect 200 response returned'() {

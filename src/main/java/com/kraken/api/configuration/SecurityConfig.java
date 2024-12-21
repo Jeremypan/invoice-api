@@ -17,7 +17,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig  {
+public class SecurityConfig {
 
     @Value("${basic.auth.username}")
     private String userName;
@@ -26,7 +26,7 @@ public class SecurityConfig  {
     private String password;
 
     @Bean
-    public UserDetailsService userDetailsService(){
+    public UserDetailsService userDetailsService() {
         UserDetails userDetails = User.builder()
                 .username(userName)
                 .password(passwordEncoder().encode(password))
@@ -36,7 +36,7 @@ public class SecurityConfig  {
     }
 
     @Bean
-    public SecurityFilterChain configure(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain configure(final HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> {

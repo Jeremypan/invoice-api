@@ -10,7 +10,9 @@ public final class InvoiceServiceException extends RuntimeException {
     private final HttpStatusCode code;
     private final String detail;
 
-    public InvoiceServiceException(final HttpStatus httpStatus, final HttpStatusCode code, final String detail) {
+    public InvoiceServiceException(final HttpStatus httpStatus,
+                                   final HttpStatusCode code,
+                                   final String detail) {
         super(detail);
         this.httpStatus = httpStatus;
         this.code = code;

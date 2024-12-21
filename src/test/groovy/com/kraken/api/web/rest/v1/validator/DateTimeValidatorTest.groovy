@@ -11,7 +11,7 @@ class DateTimeValidatorTest extends Specification {
     DateTimeValidator dateTimeValidator
 
     def setup() {
-        dateTimeValidator = new DateTimeValidator();
+        dateTimeValidator = new DateTimeValidator()
     }
 
     def 'should valid value with #scenario'() {
