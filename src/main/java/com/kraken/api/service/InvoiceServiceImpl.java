@@ -11,6 +11,7 @@ import com.kraken.api.repository.InvoiceRepository;
 import com.kraken.api.utils.DateConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,8 +32,17 @@ public class InvoiceServiceImpl implements InvoiceService{
     public void createInvoice(final Invoice invoice) {
         try {
             invoiceRepository.saveAndFlush(covertToInvoiceEntity(invoice));
+        } catch (DataIntegrityViolationException exception) {
+            logErrorMessageForCreatingInvoice(exception);
+            if(exception.getMessage().contains("duplicate key") && (exception.getMessage().contains("invoice_pk") || exception.getMessage().contains("invoice_number_unique"))) {
+                throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400), "Unable to create invoice due to the duplicate record-invoice");
+            }
+            if(exception.getMessage().contains("duplicate key") && exception.getMessage().contains("transaction_pk")) {
+                throw new InvoiceServiceException(HttpStatus.BAD_REQUEST, HttpStatusCode.valueOf(400), "Unable to create invoice due to the duplicate record-transaction");
+            }
+            throw new InvoiceServiceException(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatusCode.valueOf(500), "Unable to create invoice");
         } catch (Exception exception) {
-            log.error("Unable to create invoice due to the exception={}", exception.getMessage());
+            logErrorMessageForCreatingInvoice(exception);
             throw new InvoiceServiceException(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatusCode.valueOf(500), "Unable to create invoice");
         }
     }
@@ -133,5 +143,9 @@ public class InvoiceServiceImpl implements InvoiceService{
                         }
                 ).toList())
                 .build();
+    }
+
+    private void logErrorMessageForCreatingInvoice(Exception exception) {
+        log.error("Unable to create invoice due to the exception={}", exception.getMessage());
     }
 }

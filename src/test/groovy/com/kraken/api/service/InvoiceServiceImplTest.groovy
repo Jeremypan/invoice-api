@@ -9,8 +9,11 @@ import com.kraken.api.model.entity.TransactionEntity
 import com.kraken.api.repository.InvoiceRepository
 import com.kraken.api.utils.DateConverter
 import org.spockframework.spring.SpringBean
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -66,7 +69,7 @@ class InvoiceServiceImplTest extends Specification {
 
 
     def setup() {
-        invoiceRepository = Mock(InvoiceRepository.class)
+        invoiceRepository = Stub()
         invoiceService = new InvoiceServiceImpl(invoiceRepository)
     }
 
@@ -78,13 +81,25 @@ class InvoiceServiceImplTest extends Specification {
         noExceptionThrown()
     }
 
-    def "testCreateInvoiceUnsuccessful"() {
+    def "testCreateInvoiceUnsuccessful for #scenario"() {
+        given: "mock invoice repo exception"
+        invoiceRepository.saveAndFlush(_ as InvoiceEntity) >> {
+            throw exceptionInput
+        }
+
         when: "call create Invoice Service"
-        invoiceService.createInvoice(null)
+        invoiceService.createInvoice(buildStandardInvoiceWithTransaction())
 
         then: "throw exception"
         def ex = thrown(InvoiceServiceException)
-        ex.getMessage() == "Unable to create invoice"
+        with(ex) {
+            ex.getHttpStatus() == statusOutput
+            ex.getCode() == codeOutput
+        }
+        where: "different input and output on various scenarios"
+        scenario                | exceptionInput                                                  || statusOutput                     | codeOutput
+        "Bad Request"           | new DataIntegrityViolationException("invoice_pk duplicate key") || HttpStatus.BAD_REQUEST           | HttpStatusCode.valueOf(400)
+        "Internal Server Error" | new RuntimeException()                                          || HttpStatus.INTERNAL_SERVER_ERROR | HttpStatusCode.valueOf(500)
     }
 
     def "getInvoiceSuccessful"() {

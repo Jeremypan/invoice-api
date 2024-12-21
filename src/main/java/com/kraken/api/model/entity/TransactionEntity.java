@@ -1,14 +1,16 @@
 package com.kraken.api.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDate;
 
 @Data
 @Entity
 @Table(name="transaction")
-public class TransactionEntity {
+public class TransactionEntity implements Persistable<String>  {
 
     @Id
     @Column(name = "transaction_id", nullable = false)
@@ -38,4 +40,17 @@ public class TransactionEntity {
 
     @Column(name = "gst_amount", nullable = false)
     private Double gstAmount;
+
+    @Transient
+    private boolean isNewEntry = true;
+
+    @Override
+    public String getId() {
+        return this.transactionId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return this.isNewEntry;
+    }
 }
