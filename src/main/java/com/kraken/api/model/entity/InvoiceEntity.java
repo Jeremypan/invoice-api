@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,13 +24,13 @@ public class InvoiceEntity implements Persistable<String> {
     String invoiceNum;
 
     @Column(name = "gross_amount", nullable = false)
-    private Double grossAmount;
+    private BigDecimal grossAmount;
 
     @Column(name = "gst_amount", nullable = false)
-    private Double gstAmount;
+    private BigDecimal gstAmount;
 
     @Column(name = "net_amount", nullable = false)
-    private Double netAmount;
+    private BigDecimal netAmount;
 
     @Column(name = "receipt_date", nullable = false)
     private LocalDate receiptDate;

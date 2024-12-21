@@ -32,11 +32,11 @@ class InvoiceControllerTest extends Specification {
     @Shared
     String INVOICE_NUMBER = "588008550"
     @Shared
-    Double GROSS_AMOUNT = 40.56
+    BigDecimal GROSS_AMOUNT = 40.56
     @Shared
-    Double GST_AMOUNT = 3.69
+    BigDecimal GST_AMOUNT = 3.69
     @Shared
-    Double NET_AMOUNT = 36.87
+    BigDecimal NET_AMOUNT = 36.87
     @Shared
     String RECEIPT_DATE = "2007-12-12 18:30:52.000"
     @Shared
@@ -57,9 +57,9 @@ class InvoiceControllerTest extends Specification {
     @Shared
     String BILLING_END = "2006-03-17 00:00:00.000"
     @Shared
-    Double NET_TRXN_AMT = 32.00
+    BigDecimal NET_TRXN_AMT = 32.00
     @Shared
-    Double TRXN_GST_AMOUNT = 3.20
+    BigDecimal TRXN_GST_AMOUNT = 3.20
 
     @Shared
     String INVALID_REASON_TRXN_LINES = "The number of lines does not match the number of transactions"

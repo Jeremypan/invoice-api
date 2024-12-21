@@ -28,11 +28,11 @@ class InvoiceServiceImplTest extends Specification {
     @Shared
     String INVOICE_NUMBER = "588008550"
     @Shared
-    Double GROSS_AMOUNT = 40.56
+    BigDecimal GROSS_AMOUNT = 40.56
     @Shared
-    Double GST_AMOUNT = 3.69
+    BigDecimal GST_AMOUNT = 3.69
     @Shared
-    Double NET_AMOUNT = 36.87
+    BigDecimal NET_AMOUNT = 36.87
     @Shared
     String RECEIPT_DATE = "2007-12-12 18:30:52.000"
     @Shared
@@ -51,15 +51,15 @@ class InvoiceServiceImplTest extends Specification {
     @Shared
     String BILLING_END = "2006-03-17 00:00:00.000"
     @Shared
-    Double NET_TRXN_AMT = 32.00
+    BigDecimal NET_TRXN_AMT = 32.00
     @Shared
-    Double TRXN_GST_AMOUNT = 3.20
+    BigDecimal TRXN_GST_AMOUNT = 3.20
 
     @Shared
     String INVALID_REASON_TRXN_LINES = "The number of lines does not match the number of transactions"
 
     @Shared
-    String INVALID_REASON_TRXN_AMT = "The total value of transaction lines does not add up to the invoice total"
+    String INVALID_REASON_TRXN_AMT = "The total value of transactions does not add up to the invoice total"
 
     @SpringBean
     InvoiceRepository invoiceRepository
@@ -69,11 +69,14 @@ class InvoiceServiceImplTest extends Specification {
 
 
     def setup() {
-        invoiceRepository = Stub()
+        invoiceRepository = Spy()
         invoiceService = new InvoiceServiceImpl(invoiceRepository)
     }
 
     def "testCreateInvoiceSuccessful"() {
+        given: "mock invoice repo"
+        invoiceRepository.saveAndFlush(_ as InvoiceEntity) >> {}
+
         when: "call create Invoice Service"
         invoiceService.createInvoice(buildStandardInvoiceWithTransaction())
 
@@ -146,10 +149,10 @@ class InvoiceServiceImplTest extends Specification {
             it.status() == statusOutput
         }
         where: "various scenario"
-        scenario                | invoiceEntityOutput                                  || reasonOutput              | statusOutput
-        "ValidInvoiceStatus"    | buildInvoiceEntity(TRXN_GST_AMOUNT, NET_TRXN_AMT, 1) || null                      | Status.VALID
-        "InvalidInvoiceStatus1" | buildInvoiceEntity(TRXN_GST_AMOUNT, NET_TRXN_AMT, 2) || INVALID_REASON_TRXN_LINES | Status.INVALID
-        "InvalidInvoiceStatus2" | buildStandardInvoiceEntity()                         || INVALID_REASON_TRXN_AMT   | Status.INVALID
+        scenario                | invoiceEntityOutput                                                                     || reasonOutput              | statusOutput
+        "ValidInvoiceStatus"    | buildInvoiceEntity(TRXN_GST_AMOUNT.add(NET_TRXN_AMT), TRXN_GST_AMOUNT, NET_TRXN_AMT, 1) || null                      | Status.VALID
+        "InvalidInvoiceStatus1" | buildInvoiceEntity(GROSS_AMOUNT, TRXN_GST_AMOUNT, NET_TRXN_AMT, 2)                      || INVALID_REASON_TRXN_LINES | Status.INVALID
+        "InvalidInvoiceStatus2" | buildStandardInvoiceEntity()                                                            || INVALID_REASON_TRXN_AMT   | Status.INVALID
 
     }
 
@@ -201,11 +204,11 @@ class InvoiceServiceImplTest extends Specification {
         return invoiceEntity
     }
 
-    def buildInvoiceEntity(Double gstAmount, Double netAmount, Integer noOfTrxn) {
+    def buildInvoiceEntity(BigDecimal grossAmount, BigDecimal gstAmount, BigDecimal netAmount, Integer noOfTrxn) {
         InvoiceEntity invoiceEntity = new InvoiceEntity()
         invoiceEntity.setInvoiceId(INVOICE_ID)
         invoiceEntity.setInvoiceNum(INVOICE_NUMBER)
-        invoiceEntity.setGrossAmount(GROSS_AMOUNT)
+        invoiceEntity.setGrossAmount(grossAmount)
         invoiceEntity.setGstAmount(gstAmount)
         invoiceEntity.setNetAmount(netAmount)
         invoiceEntity.setReceiptDate(DateConverter.convertStringToDate(RECEIPT_DATE))

@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Builder
@@ -20,11 +21,11 @@ public record Invoice(
         @NotBlank(message = "invoiceNumber must not be blank")
         String invoiceNumber,
         @NotNull(message = "grossAmount must not be empty")
-        Double grossAmount,
+        BigDecimal grossAmount,
         @NotNull(message = "gstAmount must not be empty")
-        Double gstAmount,
+        BigDecimal gstAmount,
         @NotNull(message = "netAmount must not be empty")
-        Double netAmount,
+        BigDecimal netAmount,
         @NotBlank(message = "receiptDate must not be blank")
         @ValidDateTime
         String receiptDate,

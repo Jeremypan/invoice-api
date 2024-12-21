@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Slf4j
@@ -76,7 +77,7 @@ public class InvoiceServiceImpl implements InvoiceService{
         }
 
         if (!isValidTotalTransactionAmount(invoice)) {
-            return InvoiceStatus.builder().status(Status.INVALID).reason("The total value of transaction lines does not add up to the invoice total").build();
+            return InvoiceStatus.builder().status(Status.INVALID).reason("The total value of transactions does not add up to the invoice total").build();
         }
 
         return InvoiceStatus.builder().status(Status.VALID).build();
@@ -87,8 +88,11 @@ public class InvoiceServiceImpl implements InvoiceService{
     }
 
     private boolean isValidTotalTransactionAmount(final Invoice invoice) {
-        return BigDecimal.valueOf(invoice.netAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.netTransactionAmount())).reduce(BigDecimal.ZERO, BigDecimal::add))
-                && BigDecimal.valueOf(invoice.gstAmount()).equals(invoice.transactionList().stream().map(transaction -> BigDecimal.valueOf(transaction.gstAmount())).reduce(BigDecimal.ZERO, BigDecimal::add));
+        return invoice.netAmount().setScale(2, RoundingMode.HALF_UP).equals(invoice.transactionList().stream().map(Transaction::netTransactionAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP))
+                && invoice.gstAmount().setScale(2, RoundingMode.HALF_UP).equals(invoice.transactionList().stream().map(Transaction::gstAmount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP))
+                && invoice.grossAmount().setScale(2, RoundingMode.HALF_UP).equals(invoice.transactionList().stream().map(transaction -> transaction.gstAmount().add(transaction.netTransactionAmount())).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP));
+
+
     }
 
     private InvoiceEntity covertToInvoiceEntity(final Invoice invoice) {

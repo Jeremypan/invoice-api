@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Persistable;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -36,10 +37,10 @@ public class TransactionEntity implements Persistable<String>  {
     private LocalDate billingPeriodEnd;
 
     @Column(name = "net_transaction_amount", nullable = false)
-    private Double netTransactionAmount;
+    private BigDecimal netTransactionAmount;
 
     @Column(name = "gst_amount", nullable = false)
-    private Double gstAmount;
+    private BigDecimal gstAmount;
 
     @Transient
     private boolean isNewEntry = true;
